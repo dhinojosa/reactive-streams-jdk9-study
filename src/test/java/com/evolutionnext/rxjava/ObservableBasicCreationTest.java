@@ -20,7 +20,72 @@ public class ObservableBasicCreationTest {
 
     @Test
     public void testManualObservable() throws InterruptedException {
+        Observable<Integer> observable = Observable.create(
+                new ObservableOnSubscribe<Integer>() {
+                    @Override
+                    public void subscribe(ObservableEmitter<Integer> e) throws Exception {
+                        e.onNext(10);
+                        e.onNext(15);
+                        e.onNext(50);
+                        e.onComplete();
+                    }
+                });
 
+        observable.map(x -> x + 40).subscribe(new Observer<Integer>() {
+            Disposable d;
+
+            @Override
+            public void onSubscribe(Disposable d) {
+                this.d = d;
+
+            }
+
+            @Override
+            public void onNext(Integer integer) {
+                System.out.println(integer);
+                if (integer == 10) d.dispose();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onComplete() {
+                System.out.println("Done");
+            }
+        });
+    }
+
+    @Test
+    public void testManualObservableWithFunctions() throws InterruptedException {
+
+        Observable<Integer> observable = Observable.just(10, 50, 40)
+                                                   .map(x -> x + 40);
+
+
+        observable.doOnNext(x -> {
+            System.out.println("1st: " + Thread.currentThread().getName());
+        })
+                  .subscribe(System.out::println,
+                          Throwable::printStackTrace,
+                          () -> System.out.println("Done"));
+
+        System.out.println("-----");
+
+        observable.doOnNext(x -> {
+            System.out.println("2nd (before): " + Thread.currentThread().getName());
+        })
+
+                  .subscribeOn(Schedulers.computation())
+                  .repeat(10)
+                  .doOnNext(x -> {
+                      System.out.println("2nd (after): " + Thread.currentThread().getName());
+                  })
+                  .subscribe(System.out::println,
+                          Throwable::printStackTrace,
+                          () -> System.out.println("Done"));
     }
 
 
@@ -95,7 +160,7 @@ public class ObservableBasicCreationTest {
         Thread.sleep(5000);
         interval.doOnNext(x -> System.out.println(Thread.currentThread().getName()))
                 .subscribe(lng ->
-                System.out.println("2: lng = " + lng));
+                        System.out.println("2: lng = " + lng));
 
         Thread.sleep(10000);
     }

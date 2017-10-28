@@ -54,7 +54,9 @@ class SimpleStreamSpec extends FunSuite with Matchers {
   test("""A stream can be created by independent components""") {
     val mapIntFlow: Flow[Int, Int, NotUsed] = Flow[Int].map(x => 10 + x)
     val printlnSink = Sink.foreach[Int](println)
-    val graph: RunnableGraph[NotUsed] = Source(1 to 10).via(mapIntFlow).to(printlnSink)
+    val graph: RunnableGraph[NotUsed] = Source(1 to 10)
+      .via(mapIntFlow).to(printlnSink)
+
     graph.run()(materializer)
     Thread.sleep(1000)
   }
@@ -330,14 +332,16 @@ class SimpleStreamSpec extends FunSuite with Matchers {
         * builder.add will make a copy of the _blueprint_ that is added to it and return the inlets and
         * outlets that can be wired up, this will also ignore the Materialized value.
         */
-      val broadcast: UniformFanOutShape[Int, Int] = builder.add(Broadcast[Int](2))
-      val merge: UniformFanInShape[String, String] = builder.add(Merge[String](2))
+      val broadcast: UniformFanOutShape[Int, Int] =
+        builder.add(Broadcast[Int](2))
+      val merge: UniformFanInShape[String, String] =
+        builder.add(Merge[String](2))
 
       val flow_2 = Flow[Int].map(x => "Flow 2: " + x * 2)
       val flow_3 = Flow[Int].map(x => "Flow 3: " + x * 3)
 
       source ~> broadcast ~> flow_2 ~> merge ~> sink
-      broadcast ~> flow_3 ~> merge
+                broadcast ~> flow_3 ~> merge
       ClosedShape
     })
 
